@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Barbería" />
+  <meta name="description" content="Reserva tu cita en la barbería" />
+  <title>Barbería — Reservas</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Google Fonts: Cormorant para títulos elegantes, DM Sans para cuerpo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/global.css" />
+</head>
+<body>
+
+  <!-- ========================================
+       PANTALLA DE CARGA (se oculta después)
+       ======================================== -->
+  <div id="splash" class="splash">
+    <div class="splash-logo">
+      <div class="logo-scissors">✦</div>
+      <h1 class="splash-title">Barbería</h1>
+      <p class="splash-sub">Cartagena</p>
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA PRINCIPAL: Bienvenida / Acceso
+       ======================================== -->
+  <div id="screen-home" class="screen hidden">
+
+    <!-- Fondo decorativo con patrón sutil -->
+    <div class="bg-pattern"></div>
+
+    <div class="home-container">
+
+      <!-- Logo y nombre -->
+      <div class="brand-section">
+        <div class="brand-icon">✦</div>
+        <h1 class="brand-name">Barbería</h1>
+        <p class="brand-city">Cartagena, Colombia</p>
+        <div class="brand-divider"></div>
+        <p class="brand-tagline">Tu tiempo, tu estilo.</p>
+      </div>
+
+      <!-- Botones de acceso -->
+      <div class="action-section">
+
+        <!-- Botón principal: reservar como cliente -->
+        <button class="btn-primary" onclick="mostrarPantalla('screen-registro')">
+          <span class="btn-icon">📅</span>
+          <span>Reservar mi cita</span>
+        </button>
+
+        <!-- Botón secundario: acceso barbero -->
+        <button class="btn-ghost" onclick="mostrarPantalla('screen-login-barbero')">
+          <span>Acceso barbero</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+      </div>
+
+      <!-- Info de la barbería -->
+      <div class="info-strip">
+        <div class="info-item">
+          <span class="info-icon">🕐</span>
+          <span>Lun – Sáb · 9am – 7pm</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📍</span>
+          <span>Cartagena de Indias</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: REGISTRO DE CLIENTE
+       ======================================== -->
+  <div id="screen-registro" class="screen hidden">
+    <div class="page-container">
+
+      <div class="page-header">
+        <button class="btn-back" onclick="mostrarPantalla('screen-home')">← Volver</button>
+        <h2 class="page-title">¿Quién eres?</h2>
+        <p class="page-subtitle">Solo necesitamos tu nombre y WhatsApp para reservarte.</p>
+      </div>
+
+      <form id="form-registro" class="form-card" onsubmit="registrarCliente(event)">
+
+        <div class="field-group">
+          <label class="field-label" for="input-nombre">Tu nombre completo</label>
+          <input
+            class="field-input"
+            id="input-nombre"
+            type="text"
+            placeholder="Ej: Carlos Martínez"
+            autocomplete="name"
+            required
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="input-telefono">WhatsApp (con código de país)</label>
+          <input
+            class="field-input"
+            id="input-telefono"
+            type="tel"
+            placeholder="+57 300 123 4567"
+            autocomplete="tel"
+            required
+          />
+          <span class="field-hint">Lo usamos para enviarte el recordatorio de tu cita.</span>
+        </div>
+
+        <!-- Mensaje de error si está bloqueado -->
+        <div id="bloqueo-aviso" class="aviso-bloqueo hidden">
+          <span class="aviso-icon">🚫</span>
+          <div>
+            <strong>Reservas suspendidas</strong>
+            <p>Tienes 2 o más inasistencias. Escríbele al barbero directamente para reagendar.</p>
+            <a href="https://wa.me/573001234567?text=Hola%2C%20quiero%20reagendar%20mi%20cita" class="btn-whatsapp" target="_blank">
+              Contactar por WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary btn-full" id="btn-continuar-registro">
+          Continuar →
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: SELECCIONAR SERVICIO
+       ======================================== -->
+  <div id="screen-servicios" class="screen hidden">
+    <div class="page-container">
+
+      <div class="page-header">
+        <button class="btn-back" onclick="mostrarPantalla('screen-registro')">← Volver</button>
+        <h2 class="page-title">¿Qué servicio?</h2>
+        <p class="page-subtitle">Selecciona lo que necesitas hoy.</p>
+      </div>
+
+      <!-- Los servicios se cargan dinámicamente desde Airtable -->
+      <div id="lista-servicios" class="servicios-grid">
+        <div class="loading-spinner">Cargando servicios...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: SELECCIONAR FECHA Y HORA
+       ======================================== -->
+  <div id="screen-calendario" class="screen hidden">
+    <div class="page-container">
+
+      <div class="page-header">
+        <button class="btn-back" onclick="mostrarPantalla('screen-servicios')">← Volver</button>
+        <h2 class="page-title">Elige tu horario</h2>
+        <p class="page-subtitle" id="texto-servicio-seleccionado"></p>
+      </div>
+
+      <!-- Navegación de fechas -->
+      <div class="fecha-nav">
+        <button class="fecha-nav-btn" id="btn-fecha-ant" onclick="cambiarSemana(-1)">‹</button>
+        <div id="dias-semana" class="dias-semana"></div>
+        <button class="fecha-nav-btn" id="btn-fecha-sig" onclick="cambiarSemana(1)">›</button>
+      </div>
+
+      <!-- Horas disponibles -->
+      <div class="horas-section">
+        <p class="horas-titulo">Horarios disponibles</p>
+        <div id="grid-horas" class="horas-grid">
+          <div class="loading-spinner">Selecciona una fecha...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: CONFIRMACIÓN DE RESERVA
+       ======================================== -->
+  <div id="screen-confirmacion" class="screen hidden">
+    <div class="page-container">
+
+      <div class="page-header">
+        <button class="btn-back" onclick="mostrarPantalla('screen-calendario')">← Volver</button>
+        <h2 class="page-title">Confirmar cita</h2>
+      </div>
+
+      <div class="resumen-cita" id="resumen-cita">
+        <!-- Se llena con JS -->
+      </div>
+
+      <div class="confirmacion-aviso">
+        <span>📲</span>
+        <p>Recibirás un recordatorio por WhatsApp <strong>1 hora antes</strong> de tu cita.</p>
+      </div>
+
+      <button class="btn-primary btn-full" onclick="confirmarReserva()">
+        ✓ Confirmar reserva
+      </button>
+
+      <div id="exito-reserva" class="exito-card hidden">
+        <div class="exito-icon">✅</div>
+        <h3>¡Reserva confirmada!</h3>
+        <p>Te esperamos. No olvides tu cita — si necesitas cancelar, hazlo con al menos 2 horas de anticipación.</p>
+        <button class="btn-ghost btn-full" onclick="mostrarPantalla('screen-home')">Volver al inicio</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: LOGIN DEL BARBERO
+       ======================================== -->
+  <div id="screen-login-barbero" class="screen hidden">
+    <div class="page-container">
+
+      <div class="page-header">
+        <button class="btn-back" onclick="mostrarPantalla('screen-home')">← Volver</button>
+        <h2 class="page-title">Acceso barbero</h2>
+        <p class="page-subtitle">Ingresa tu PIN de administrador.</p>
+      </div>
+
+      <form class="form-card" onsubmit="loginBarbero(event)">
+
+        <div class="field-group">
+          <label class="field-label" for="input-pin">PIN de acceso</label>
+          <input
+            class="field-input field-pin"
+            id="input-pin"
+            type="password"
+            inputmode="numeric"
+            maxlength="4"
+            placeholder="• • • •"
+            required
+          />
+        </div>
+
+        <div id="login-error" class="aviso-error hidden">PIN incorrecto. Inténtalo de nuevo.</div>
+
+        <button type="submit" class="btn-primary btn-full">Entrar</button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================
+       PANTALLA: PANEL DEL BARBERO
+       ======================================== -->
+  <div id="screen-panel" class="screen hidden">
+    <div class="panel-container">
+
+      <!-- Header del panel -->
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-titulo">Mi agenda</h2>
+          <p class="panel-fecha" id="panel-fecha-hoy"></p>
+        </div>
+        <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+      </div>
+
+      <!-- Stats rápidas -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-num" id="stat-pendientes">0</span>
+          <span class="stat-label">Pendientes</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="stat-completadas">0</span>
+          <span class="stat-label">Completadas</span>
+        </div>
+        <div class="stat-card stat-gold">
+          <span class="stat-num" id="stat-ingresos">$0</span>
+          <span class="stat-label">Ingresos hoy</span>
+        </div>
+      </div>
+
+      <!-- Botón bloquear hora -->
+      <button class="btn-bloquear" onclick="mostrarModalBloqueo()">
+        + Bloquear hora
+      </button>
+
+      <!-- Lista de citas de hoy -->
+      <div class="citas-section">
+        <p class="citas-titulo">Citas de hoy</p>
+        <div id="lista-citas-hoy">
+          <div class="loading-spinner">Cargando agenda...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal bloquear hora -->
+    <div id="modal-bloqueo" class="modal-overlay hidden" onclick="cerrarModalBloqueo(event)">
+      <div class="modal-card">
+        <h3 class="modal-titulo">Bloquear horario</h3>
+
+        <div class="field-group">
+          <label class="field-label">Motivo</label>
+          <input class="field-input" id="bloqueo-motivo" type="text" placeholder="Ej: Almuerzo, Descanso..." />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Fecha</label>
+          <input class="field-input" id="bloqueo-fecha" type="date" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Hora inicio</label>
+          <input class="field-input" id="bloqueo-inicio" type="time" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Hora fin</label>
+          <input class="field-input" id="bloqueo-fin" type="time" />
+        </div>
+
+        <button class="btn-primary btn-full" onclick="guardarBloqueo()">Guardar bloqueo</button>
+        <button class="btn-ghost btn-full" onclick="cerrarModalBloqueo()">Cancelar</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/airtable.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
