@@ -96,7 +96,7 @@ async function crearCliente(nombre, telefono) {
 
 /*
   Suma +1 a las faltas de un cliente.
-  Se llama cuando el barbero marca "No Asistio".
+  Se llama cuando el barbero marca "No Asistió".
   
   Parámetro:
   - clienteId: el ID interno de Airtable (recId... empieza con "rec")
@@ -148,8 +148,8 @@ async function obtenerCitasPorFecha(fecha) {
   Trae todas las citas sin importar el estado.
 */
 async function obtenerCitasHoy() {
-  // Airtable guarda fechas en formato local, usamos IS_SAME para evitar problemas de formato
-  const hoy = new Date().toISOString().split('T')[0]; // '2026-05-24'
+  // Calculamos la fecha de hoy en formato que entiende Airtable
+  const hoy = new Date().toISOString().split('T')[0]; // '2025-01-15'
   const filtro = `IS_SAME({Fecha}, "${hoy}", 'day')`;
   const resultado = await llamarAirtable(CONFIG.TABLA_CITAS, 'GET', null, filtro);
   
@@ -171,7 +171,7 @@ async function obtenerCitasHoy() {
 async function crearCita(clienteId, servicioId, fecha, horaInicio) {
   const datos = {
     fields: {
-      'Cliente': [clienteId],
+      'Cliente': [clienteId],       // En Airtable, los links son arrays
       'Servicio': [servicioId],
       'Fecha': fecha,
       'Hora_Inicio': horaInicio,
@@ -187,7 +187,7 @@ async function crearCita(clienteId, servicioId, fecha, horaInicio) {
   
   Parámetros:
   - citaId: ID de la cita en Airtable
-  - nuevoEstado: 'Completada', 'No Asistio', o 'Cancelada'
+  - nuevoEstado: 'Completada', 'No Asistió', o 'Cancelada'
 */
 async function actualizarEstadoCita(citaId, nuevoEstado) {
   const datos = {
