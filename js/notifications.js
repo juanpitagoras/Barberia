@@ -2,46 +2,40 @@
    NOTIFICATIONS.JS — Sistema de notificaciones push
    ============================================ */
 
-// Inicializar Firebase
-firebase.initializeApp(FIREBASE_CONFIG);
+// Firebase ya fue inicializado en firebase-config.js
+// Solo obtenemos la instancia de messaging
 const messaging = firebase.messaging();
 
-/*
-  Pide permiso y guarda el token del dispositivo en Airtable.
-  Se llama después de que el cliente se registra.
-*/
+// Registrar el Service Worker de Firebase con la ruta correcta para GitHub Pages
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Barberia/firebase-messaging-sw.js')
+    .then(registration => {
+      messaging.useServiceWorker(registration);
+      console.log("Firebase SW registrado");
+    })
+    .catch(err => console.log('SW Firebase error:', err));
+}
+
 async function activarNotificaciones(clienteId) {
   try {
-    // Solo funciona en HTTPS o localhost
-    if (!('Notification' in window)) {
-      console.log('Este navegador no soporta notificaciones');
-      return;
-    }
+    if (!('Notification' in window)) return;
 
-    // Pedir permiso al usuario
     const permiso = await Notification.requestPermission();
-    if (permiso !== 'granted') {
-      console.log('Permiso de notificaciones rechazado');
-      return;
-    }
+    if (permiso !== 'granted') return;
 
-    // Obtener token único de este dispositivo
     const token = await messaging.getToken({ vapidKey: VAPID_KEY });
 
     if (token) {
-      // Guardar token en Airtable junto al cliente
-      await llamarAirtable(`${CONFIG.TABLA_CLIENTES}/${clienteId}`, 'PATCH', {
+      await llamarAirtable(CONFIG.TABLA_CLIENTES + '/' + clienteId, 'PATCH', {
         fields: { 'FCM_Token': token }
       });
-      console.log('✅ Notificaciones activadas');
+      console.log('Notificaciones activadas');
     }
-
   } catch (error) {
     console.log('Notificaciones no disponibles:', error.message);
   }
 }
 
-// Notificación cuando app está ABIERTA
 messaging.onMessage((payload) => {
   const { title, body } = payload.notification;
   new Notification(title, {
