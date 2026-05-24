@@ -1,5 +1,5 @@
 /* ============================================
-   FIREBASE CONFIG — Notificaciones Push
+   FIREBASE CONFIG
    ============================================ */
 
 const FIREBASE_CONFIG = {
@@ -12,3 +12,6 @@ const FIREBASE_CONFIG = {
 };
 
 const VAPID_KEY = 'BKeb4CaBmn5DEnOQq7IfNBQTK32HAOsgin2dOBwwGZztmkWfpJoD3xctl1yP7oKJBmjH-oEfcSElyZ4Hl9HXCLA';
+
+// Inicializar Firebase una sola vez
+firebase.initializeApp(FIREBASE_CONFIG);
