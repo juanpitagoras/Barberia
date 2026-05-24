@@ -117,6 +117,9 @@ async function registrarCliente(evento) {
       return; // Paramos aquí, no dejamos continuar
     }
     
+    // Activar notificaciones push para este cliente
+    activarNotificaciones(estado.cliente.id);
+
     // Todo bien → vamos a seleccionar el servicio
     mostrarPantalla('screen-servicios');
     cargarServicios();
@@ -560,13 +563,11 @@ async function cargarPanelBarbero() {
   con los botones de acción rápida.
 */
 function renderizarCitaBarbero(cita, contenedor) {
-  // Estado puede venir como string o array desde Airtable
-  const estadoRaw = cita.fields.Estado;
-  const estado_cita = Array.isArray(estadoRaw) ? estadoRaw[0] : (estadoRaw || 'Pendiente');
+  const estado_cita = cita.fields.Estado || 'Pendiente';
   const clasesEstado = {
     'Pendiente': '',
     'Completada': 'completada',
-    'No Asistio': 'no-asistio',
+    'No Asistió': 'no-asistio',
     'Cancelada': 'cancelada',
   };
   
@@ -575,26 +576,16 @@ function renderizarCitaBarbero(cita, contenedor) {
   card.id = `cita-${cita.id}`;
   
   // Nombre del cliente (puede venir del lookup de Airtable)
-  // Los Lookup de Airtable devuelven arrays, tomamos el primer elemento
-  const nombreClienteRaw = cita.fields['Cliente_Nombre'] || cita.fields['Nombre (from Cliente)'];
-  const nombreServicioRaw = cita.fields['Servicio_Nombre'] || cita.fields['Servicio (from Servicio)'];
-  const nombreCliente = Array.isArray(nombreClienteRaw) ? nombreClienteRaw[0] : (nombreClienteRaw || 'Cliente');
-  const nombreServicio = Array.isArray(nombreServicioRaw) ? nombreServicioRaw[0] : (nombreServicioRaw || 'Servicio');
+  const nombreCliente = cita.fields['Cliente_Nombre'] || 'Cliente';
+  const nombreServicio = cita.fields['Servicio_Nombre'] || 'Servicio';
   
   // Mostrar botones de acción solo si la cita sigue pendiente
-  const clienteIdBtn = cita.fields.Cliente?.[0] || '';
-  const faltasBtn = Array.isArray(cita.fields.Faltas_Acumuladas) 
-    ? (cita.fields.Faltas_Acumuladas[0] || 0) 
-    : (cita.fields.Faltas_Acumuladas || 0);
-
-  // Mostramos botones si el estado es Pendiente (o no está definido aún)
-  const esPendiente = !estado_cita || estado_cita === 'Pendiente' || estado_cita.toLowerCase().includes('pendiente');
-  const accionesHTML = esPendiente ? `
+  const accionesHTML = estado_cita === 'Pendiente' ? `
     <div class="cita-acciones">
-      <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${clienteIdBtn}', ${faltasBtn})">
+      <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${cita.fields.Cliente?.[0] || ''}', ${cita.fields.Faltas_Acumuladas || 0})">
         ✓ Completada
       </button>
-      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistio', '${clienteIdBtn}', ${faltasBtn})">
+      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistió', '${cita.fields.Cliente?.[0] || ''}', ${cita.fields.Faltas_Acumuladas || 0})">
         ✗ No asistió
       </button>
     </div>
@@ -613,8 +604,8 @@ function renderizarCitaBarbero(cita, contenedor) {
 }
 
 /*
-  Marca una cita como Completada o No Asistio.
-  Si es "No Asistio", suma +1 falta al cliente.
+  Marca una cita como Completada o No Asistió.
+  Si es "No Asistió", suma +1 falta al cliente.
 */
 async function marcarCita(citaId, nuevoEstado, clienteId, faltasActuales) {
   try {
@@ -622,7 +613,7 @@ async function marcarCita(citaId, nuevoEstado, clienteId, faltasActuales) {
     await actualizarEstadoCita(citaId, nuevoEstado);
     
     // 2. Si no asistió, sumarle una falta al cliente
-    if (nuevoEstado === 'No Asistio' && clienteId) {
+    if (nuevoEstado === 'No Asistió' && clienteId) {
       await sumarFalta(clienteId, faltasActuales);
     }
     
