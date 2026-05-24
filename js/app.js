@@ -587,7 +587,9 @@ function renderizarCitaBarbero(cita, contenedor) {
     ? (cita.fields.Faltas_Acumuladas[0] || 0) 
     : (cita.fields.Faltas_Acumuladas || 0);
 
-  const accionesHTML = estado_cita === 'Pendiente' ? `
+  // Mostramos botones si el estado es Pendiente (o no está definido aún)
+  const esPendiente = !estado_cita || estado_cita === 'Pendiente' || estado_cita.toLowerCase().includes('pendiente');
+  const accionesHTML = esPendiente ? `
     <div class="cita-acciones">
       <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${clienteIdBtn}', ${faltasBtn})">
         ✓ Completada
