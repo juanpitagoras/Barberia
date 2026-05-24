@@ -1,52 +1,52 @@
-/* NOTIFICATIONS.JS - Push notifications via Firebase */
+/* NOTIFICATIONS.JS - Web Push nativo sin Firebase */
 
-firebase.initializeApp({
-  apiKey: "AIzaSyAvNX4RcUBL3Red8APPmCqFm_8oiPEpH54",
-  authDomain: "barberiafredy22.firebaseapp.com",
-  projectId: "barberiafredy22",
-  storageBucket: "barberiafredy22.firebasestorage.app",
-  messagingSenderId: "796172532618",
-  appId: "1:796172532618:web:5ec62e9598bfcd57c22673",
-});
+const VAPID_PUBLIC_KEY = 'BGcv6AGAVihvR41YXkYC-gv3pm2vfunJ44eiB3XDhoQzuH--EH-MBzXvNQdXO4Qo4u3ZzvWkQgcAXXv0pP5s6zc';
 
-const VAPID_KEY = "BKeb4CaBmn5DEnOQq7IfNBQTK32HAOsgin2dOBwwGZztmkWfpJoD3xctl1yP7oKJBmjH-oEfcSElyZ4Hl9HXCLA";
-const messaging = firebase.messaging();
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 async function activarNotificaciones(clienteId) {
   try {
-    if (!("Notification" in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.log('Push no soportado en este navegador');
+      return;
+    }
+
     const permiso = await Notification.requestPermission();
-    if (permiso !== "granted") return;
+    if (permiso !== 'granted') {
+      console.log('Permiso denegado');
+      return;
+    }
 
-    // Detectar la ruta base automaticamente (funciona en Live Server Y GitHub Pages)
-    const basePath = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
-    const swPath = basePath + '/firebase-messaging-sw.js';
-    
-    console.log('Registrando SW en:', swPath);
+    // Usar el SW principal que ya está registrado
+    const swRegistration = await navigator.serviceWorker.ready;
 
-    const swRegistration = await navigator.serviceWorker.register(swPath);
-    
-    const token = await messaging.getToken({ 
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: swRegistration
+    // Suscribir al usuario a Web Push
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
 
-    if (token && clienteId) {
-      await llamarAirtable(CONFIG.TABLA_CLIENTES + "/" + clienteId, "PATCH", {
-        fields: { "FCM_Token": token }
+    // Guardar la suscripción en Airtable como JSON
+    const subJSON = JSON.stringify(subscription);
+    
+    if (clienteId) {
+      await llamarAirtable(CONFIG.TABLA_CLIENTES + '/' + clienteId, 'PATCH', {
+        fields: { 'FCM_Token': subJSON }
       });
-      console.log("Notificaciones activadas, token guardado");
+      console.log('✅ Suscripción push guardada en Airtable');
     }
+
   } catch (err) {
-    console.log("Notificaciones no disponibles:", err.message);
+    console.log('Push no disponible:', err.message);
   }
 }
-
-messaging.onMessage((payload) => {
-  if (payload.notification) {
-    new Notification(payload.notification.title, {
-      body: payload.notification.body,
-      icon: '/Barberia/icons/icon-192.png'
-    });
-  }
-});
+navigator.serviceWorker.ready.then(sw => sw.pushManager.getSubscription()).then(sub => { if(sub) sub.unsubscribe().then(r => console.log('Limpiado:', r)) })
