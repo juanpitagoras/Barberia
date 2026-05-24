@@ -96,7 +96,7 @@ async function crearCliente(nombre, telefono) {
 
 /*
   Suma +1 a las faltas de un cliente.
-  Se llama cuando el barbero marca "No Asistió".
+  Se llama cuando el barbero marca "No Asistio".
   
   Parámetro:
   - clienteId: el ID interno de Airtable (recId... empieza con "rec")
@@ -138,7 +138,7 @@ async function obtenerServicios() {
 */
 async function obtenerCitasPorFecha(fecha) {
   // El filtro busca citas de esa fecha que NO estén canceladas
-  const filtro = `AND({Fecha}="${fecha}", {Estado}!="Cancelada")`;
+  const filtro = `AND(IS_SAME({Fecha}, "${fecha}", 'day'), {Estado}!="Cancelada")`;
   const resultado = await llamarAirtable(CONFIG.TABLA_CITAS, 'GET', null, filtro);
   return resultado.records;
 }
@@ -187,7 +187,7 @@ async function crearCita(clienteId, servicioId, fecha, horaInicio) {
   
   Parámetros:
   - citaId: ID de la cita en Airtable
-  - nuevoEstado: 'Completada', 'No Asistió', o 'Cancelada'
+  - nuevoEstado: 'Completada', 'No Asistio', o 'Cancelada'
 */
 async function actualizarEstadoCita(citaId, nuevoEstado) {
   const datos = {
@@ -207,7 +207,7 @@ async function actualizarEstadoCita(citaId, nuevoEstado) {
 */
 async function obtenerBloqueosPorFecha(fecha) {
   // Traemos bloqueos de ese día O los que son recurrentes (almuerzo diario)
-  const filtro = `OR({Fecha}="${fecha}", {Recurrente}=TRUE())`;
+  const filtro = `OR(IS_SAME({Fecha}, "${fecha}", 'day'), {Recurrente}=TRUE())`;
   const resultado = await llamarAirtable(CONFIG.TABLA_BLOQUEOS, 'GET', null, filtro);
   return resultado.records;
 }
