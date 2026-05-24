@@ -566,7 +566,7 @@ function renderizarCitaBarbero(cita, contenedor) {
   const clasesEstado = {
     'Pendiente': '',
     'Completada': 'completada',
-    'No Asistió': 'no-asistio',
+    'No Asistio': 'no-asistio',
     'Cancelada': 'cancelada',
   };
   
@@ -594,7 +594,7 @@ function renderizarCitaBarbero(cita, contenedor) {
       <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${clienteIdBtn}', ${faltasBtn})">
         ✓ Completada
       </button>
-      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistió', '${clienteIdBtn}', ${faltasBtn})">
+      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistio', '${clienteIdBtn}', ${faltasBtn})">
         ✗ No asistió
       </button>
     </div>
@@ -613,8 +613,8 @@ function renderizarCitaBarbero(cita, contenedor) {
 }
 
 /*
-  Marca una cita como Completada o No Asistió.
-  Si es "No Asistió", suma +1 falta al cliente.
+  Marca una cita como Completada o No Asistio.
+  Si es "No Asistio", suma +1 falta al cliente.
 */
 async function marcarCita(citaId, nuevoEstado, clienteId, faltasActuales) {
   try {
@@ -622,7 +622,7 @@ async function marcarCita(citaId, nuevoEstado, clienteId, faltasActuales) {
     await actualizarEstadoCita(citaId, nuevoEstado);
     
     // 2. Si no asistió, sumarle una falta al cliente
-    if (nuevoEstado === 'No Asistió' && clienteId) {
+    if (nuevoEstado === 'No Asistio' && clienteId) {
       await sumarFalta(clienteId, faltasActuales);
     }
     
