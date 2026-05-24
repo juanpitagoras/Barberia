@@ -148,9 +148,9 @@ async function obtenerCitasPorFecha(fecha) {
   Trae todas las citas sin importar el estado.
 */
 async function obtenerCitasHoy() {
-  // Calculamos la fecha de hoy en formato que entiende Airtable
-  const hoy = new Date().toISOString().split('T')[0]; // '2025-01-15'
-  const filtro = `{Fecha}="${hoy}"`;
+  // Airtable guarda fechas en formato local, usamos IS_SAME para evitar problemas de formato
+  const hoy = new Date().toISOString().split('T')[0]; // '2026-05-24'
+  const filtro = `IS_SAME({Fecha}, "${hoy}", 'day')`;
   const resultado = await llamarAirtable(CONFIG.TABLA_CITAS, 'GET', null, filtro);
   
   // Ordenamos las citas por hora (más temprana primero)
