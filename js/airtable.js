@@ -171,12 +171,11 @@ async function obtenerCitasHoy() {
 async function crearCita(clienteId, servicioId, fecha, horaInicio) {
   const datos = {
     fields: {
-      'Cliente': [clienteId],       // En Airtable, los links son arrays
+      'Cliente': [clienteId],
       'Servicio': [servicioId],
       'Fecha': fecha,
       'Hora_Inicio': horaInicio,
-      'Estado': 'Pendiente',         // Siempre empieza como Pendiente
-      'Notificacion_Enviada': false, // Make lo cambiará cuando envíe el WhatsApp
+      'Notificacion_Enviada': false,
     }
   };
   return await llamarAirtable(CONFIG.TABLA_CITAS, 'POST', datos);
