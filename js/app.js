@@ -560,7 +560,9 @@ async function cargarPanelBarbero() {
   con los botones de acción rápida.
 */
 function renderizarCitaBarbero(cita, contenedor) {
-  const estado_cita = cita.fields.Estado || 'Pendiente';
+  // Estado puede venir como string o array desde Airtable
+  const estadoRaw = cita.fields.Estado;
+  const estado_cita = Array.isArray(estadoRaw) ? estadoRaw[0] : (estadoRaw || 'Pendiente');
   const clasesEstado = {
     'Pendiente': '',
     'Completada': 'completada',
@@ -573,16 +575,24 @@ function renderizarCitaBarbero(cita, contenedor) {
   card.id = `cita-${cita.id}`;
   
   // Nombre del cliente (puede venir del lookup de Airtable)
-  const nombreCliente = cita.fields['Cliente_Nombre'] || 'Cliente';
-  const nombreServicio = cita.fields['Servicio_Nombre'] || 'Servicio';
+  // Los Lookup de Airtable devuelven arrays, tomamos el primer elemento
+  const nombreClienteRaw = cita.fields['Cliente_Nombre'] || cita.fields['Nombre (from Cliente)'];
+  const nombreServicioRaw = cita.fields['Servicio_Nombre'] || cita.fields['Servicio (from Servicio)'];
+  const nombreCliente = Array.isArray(nombreClienteRaw) ? nombreClienteRaw[0] : (nombreClienteRaw || 'Cliente');
+  const nombreServicio = Array.isArray(nombreServicioRaw) ? nombreServicioRaw[0] : (nombreServicioRaw || 'Servicio');
   
   // Mostrar botones de acción solo si la cita sigue pendiente
+  const clienteIdBtn = cita.fields.Cliente?.[0] || '';
+  const faltasBtn = Array.isArray(cita.fields.Faltas_Acumuladas) 
+    ? (cita.fields.Faltas_Acumuladas[0] || 0) 
+    : (cita.fields.Faltas_Acumuladas || 0);
+
   const accionesHTML = estado_cita === 'Pendiente' ? `
     <div class="cita-acciones">
-      <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${cita.fields.Cliente?.[0] || ''}', ${cita.fields.Faltas_Acumuladas || 0})">
+      <button class="btn-accion btn-completar" onclick="marcarCita('${cita.id}', 'Completada', '${clienteIdBtn}', ${faltasBtn})">
         ✓ Completada
       </button>
-      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistió', '${cita.fields.Cliente?.[0] || ''}', ${cita.fields.Faltas_Acumuladas || 0})">
+      <button class="btn-accion btn-no-asistio" onclick="marcarCita('${cita.id}', 'No Asistió', '${clienteIdBtn}', ${faltasBtn})">
         ✗ No asistió
       </button>
     </div>
