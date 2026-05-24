@@ -117,6 +117,12 @@ async function registrarCliente(evento) {
       return; // Paramos aquí, no dejamos continuar
     }
     
+    // Activar notificaciones push para este cliente
+    activarNotificaciones(estado.cliente.id);
+
+    // Activar notificaciones push
+    activarNotificaciones(estado.cliente.id);
+
     // Todo bien → vamos a seleccionar el servicio
     mostrarPantalla('screen-servicios');
     cargarServicios();
@@ -519,17 +525,25 @@ async function cargarPanelBarbero() {
     const citas = await obtenerCitasHoy();
     
     // Calculamos estadísticas
-    const pendientes  = citas.filter(c => c.fields.Estado === 'Pendiente').length;
-    const completadas = citas.filter(c => c.fields.Estado === 'Completada').length;
+    // Estado puede ser string o array desde Airtable
+    const getEstado = (c) => {
+      const e = c.fields.Estado;
+      return Array.isArray(e) ? e[0] : (e || 'Pendiente');
+    };
+    const pendientes  = citas.filter(c => getEstado(c) === 'Pendiente').length;
+    const completadas = citas.filter(c => getEstado(c) === 'Completada').length;
     
     // Ingresos del día (solo citas completadas)
     // Nota: necesitamos el precio del servicio, que viene del lookup de Airtable
     // Usamos el campo calculado si existe, o 0 si no
     const ingresos = citas
-      .filter(c => c.fields.Estado === 'Completada')
+      .filter(c => getEstado(c) === 'Completada')
       .reduce((sum, c) => {
-        // El campo 'Precio_COP' viene del lookup del servicio en Airtable
-        const precio = c.fields['Servicio_Precio'] || 0;
+        // Servicio_Precio es un Lookup → viene como array, tomamos el primer elemento
+        const precioRaw = c.fields['Servicio_Precio'];
+        const precio = Array.isArray(precioRaw) 
+          ? Number(precioRaw[0]) || 0 
+          : Number(precioRaw) || 0;
         return sum + precio;
       }, 0);
     
