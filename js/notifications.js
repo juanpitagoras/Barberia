@@ -1,45 +1,52 @@
-/* ============================================
-   NOTIFICATIONS.JS — Sistema de notificaciones push
-   ============================================ */
+/* NOTIFICATIONS.JS - Push notifications via Firebase */
 
-// Firebase ya fue inicializado en firebase-config.js
-// Solo obtenemos la instancia de messaging
+firebase.initializeApp({
+  apiKey: "AIzaSyAvNX4RcUBL3Red8APPmCqFm_8oiPEpH54",
+  authDomain: "barberiafredy22.firebaseapp.com",
+  projectId: "barberiafredy22",
+  storageBucket: "barberiafredy22.firebasestorage.app",
+  messagingSenderId: "796172532618",
+  appId: "1:796172532618:web:5ec62e9598bfcd57c22673",
+});
+
+const VAPID_KEY = "BKeb4CaBmn5DEnOQq7IfNBQTK32HAOsgin2dOBwwGZztmkWfpJoD3xctl1yP7oKJBmjH-oEfcSElyZ4Hl9HXCLA";
 const messaging = firebase.messaging();
-
-// Registrar el Service Worker de Firebase con la ruta correcta para GitHub Pages
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/Barberia/firebase-messaging-sw.js')
-    .then(registration => {
-      messaging.useServiceWorker(registration);
-      console.log("Firebase SW registrado");
-    })
-    .catch(err => console.log('SW Firebase error:', err));
-}
 
 async function activarNotificaciones(clienteId) {
   try {
-    if (!('Notification' in window)) return;
-
+    if (!("Notification" in window)) return;
     const permiso = await Notification.requestPermission();
-    if (permiso !== 'granted') return;
+    if (permiso !== "granted") return;
 
-    const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+    // Detectar la ruta base automaticamente (funciona en Live Server Y GitHub Pages)
+    const basePath = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
+    const swPath = basePath + '/firebase-messaging-sw.js';
+    
+    console.log('Registrando SW en:', swPath);
 
-    if (token) {
-      await llamarAirtable(CONFIG.TABLA_CLIENTES + '/' + clienteId, 'PATCH', {
-        fields: { 'FCM_Token': token }
+    const swRegistration = await navigator.serviceWorker.register(swPath);
+    
+    const token = await messaging.getToken({ 
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swRegistration
+    });
+
+    if (token && clienteId) {
+      await llamarAirtable(CONFIG.TABLA_CLIENTES + "/" + clienteId, "PATCH", {
+        fields: { "FCM_Token": token }
       });
-      console.log('Notificaciones activadas');
+      console.log("Notificaciones activadas, token guardado");
     }
-  } catch (error) {
-    console.log('Notificaciones no disponibles:', error.message);
+  } catch (err) {
+    console.log("Notificaciones no disponibles:", err.message);
   }
 }
 
 messaging.onMessage((payload) => {
-  const { title, body } = payload.notification;
-  new Notification(title, {
-    body: body,
-    icon: '/Barberia/icons/icon-192.png',
-  });
+  if (payload.notification) {
+    new Notification(payload.notification.title, {
+      body: payload.notification.body,
+      icon: '/Barberia/icons/icon-192.png'
+    });
+  }
 });
