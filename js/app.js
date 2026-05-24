@@ -117,9 +117,6 @@ async function registrarCliente(evento) {
       return; // Paramos aquí, no dejamos continuar
     }
     
-    // Activar notificaciones push para este cliente
-    activarNotificaciones(estado.cliente.id);
-
     // Todo bien → vamos a seleccionar el servicio
     mostrarPantalla('screen-servicios');
     cargarServicios();
