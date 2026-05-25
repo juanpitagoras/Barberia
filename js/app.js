@@ -40,8 +40,35 @@ function mostrarPantalla(idPantalla) {
   // 2. Mostrar solo la pantalla que queremos
   document.getElementById(idPantalla).classList.remove('hidden');
   
-  // 3. Scroll al inicio (en móvil, las páginas largas quedan a mitad)
+  // 3. Scroll al inicio
   window.scrollTo(0, 0);
+
+  // 4. Si volvemos al home, reseteamos TODO el estado
+  if (idPantalla === 'screen-home') {
+    estado.cliente = null;
+    estado.servicio = null;
+    estado.fecha = null;
+    estado.hora = null;
+    estado.semanaOffset = 0;
+    estado.citasDelDia = [];
+    estado.bloqueosDelDia = [];
+    // Limpiar formularios
+    const inputNombre = document.getElementById('input-nombre');
+    const inputTelefono = document.getElementById('input-telefono');
+    if (inputNombre) inputNombre.value = '';
+    if (inputTelefono) inputTelefono.value = '';
+    const avisoBloqueo = document.getElementById('bloqueo-aviso');
+    const btnContinuar = document.getElementById('btn-continuar-registro');
+    if (avisoBloqueo) avisoBloqueo.classList.add('hidden');
+    if (btnContinuar) btnContinuar.classList.remove('hidden');
+    // Limpiar selección de servicios
+    document.querySelectorAll('.servicio-card').forEach(c => c.classList.remove('activo'));
+    // Ocultar éxito de reserva
+    const exitoReserva = document.getElementById('exito-reserva');
+    if (exitoReserva) exitoReserva.classList.add('hidden');
+    const btnConfirmar = document.querySelector('#screen-confirmacion .btn-primary');
+    if (btnConfirmar) { btnConfirmar.classList.remove('hidden'); btnConfirmar.disabled = false; btnConfirmar.textContent = '✓ Confirmar reserva'; }
+  }
 }
 
 
@@ -226,7 +253,19 @@ function inicializarCalendario() {
   document.getElementById('texto-servicio-seleccionado').textContent =
     `${estado.servicio.nombre} · ${estado.servicio.duracion} min`;
   
+  // Resetear calendario completamente
   estado.semanaOffset = 0;
+  estado.fecha = null;
+  estado.hora = null;
+  estado.citasDelDia = [];
+  estado.bloqueosDelDia = [];
+  
+  // Limpiar grid de horas y días visualmente
+  document.getElementById('grid-horas').innerHTML = 
+    '<div class="loading-spinner">Selecciona una fecha...</div>';
+  document.querySelectorAll('.dia-btn').forEach(b => b.classList.remove('activo'));
+  document.querySelectorAll('.hora-btn').forEach(b => b.classList.remove('activo'));
+  
   renderizarDias();
 }
 
@@ -239,25 +278,32 @@ function renderizarDias() {
   contenedor.innerHTML = '';
   
   const hoy = new Date();
+  // Usamos fecha local para evitar problemas de zona horaria (Colombia = UTC-5)
+  const hoyLocal = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
   const diasNombres = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   
-  // Mostramos 7 días a partir de hoy (o de donde estemos en la semana)
+  // Si ya pasó la hora límite del día (HORA_FIN), empezamos desde mañana
+  const horaActual = hoy.getHours();
+  const offsetInicial = horaActual >= CONFIG.HORA_FIN ? 1 : 0;
+  
   for (let i = 0; i < 7; i++) {
-    const dia = new Date(hoy);
-    // Sumamos el offset de semanas + el día dentro de la semana
-    dia.setDate(hoy.getDate() + (estado.semanaOffset * 7) + i);
+    const dia = new Date(hoyLocal);
+    dia.setDate(hoyLocal.getDate() + offsetInicial + (estado.semanaOffset * 7) + i);
     
-    const numeroDia = dia.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
-    const esPasado = dia < hoy && dia.toDateString() !== hoy.toDateString();
+    const numeroDia = dia.getDay();
+    const esPasado = dia < hoyLocal;
     const esLaboral = CONFIG.DIAS_LABORALES.includes(numeroDia);
     
-    if (!esLaboral) continue; // Saltar días no laborales (domingos)
+    if (!esLaboral) continue;
     
     const btn = document.createElement('button');
     btn.className = `dia-btn${esPasado ? ' pasado' : ''}`;
     
-    // Formato de la fecha para Airtable: 'YYYY-MM-DD'
-    const fechaStr = dia.toISOString().split('T')[0];
+    // Formato local YYYY-MM-DD sin problemas de zona horaria
+    const year = dia.getFullYear();
+    const month = String(dia.getMonth() + 1).padStart(2, '0');
+    const day = String(dia.getDate()).padStart(2, '0');
+    const fechaStr = `${year}-${month}-${day}`;
     
     btn.innerHTML = `
       <span class="dia-nombre">${diasNombres[numeroDia]}</span>
@@ -400,7 +446,9 @@ function renderizarResumen() {
   const contenedor = document.getElementById('resumen-cita');
   
   // Formateamos la fecha en español para que sea más legible
-  const fecha = new Date(estado.fecha + 'T12:00:00'); // T12 evita problemas de zona horaria
+  // Construimos la fecha manualmente para evitar problemas de zona horaria
+  const [anio, mes, dia2] = estado.fecha.split('-').map(Number);
+  const fecha = new Date(anio, mes - 1, dia2); // mes-1 porque JS usa 0-11
   const fechaFormateada = fecha.toLocaleDateString('es-CO', {
     weekday: 'long',
     day: 'numeric',
@@ -461,10 +509,19 @@ async function confirmarReserva() {
     btn.classList.add('hidden');
     document.getElementById('exito-reserva').classList.remove('hidden');
     
-    // Limpiamos el estado para una posible nueva reserva
+    // Reseteamos el estado COMPLETO para permitir nueva reserva sin reiniciar
     estado.servicio = null;
     estado.fecha = null;
     estado.hora = null;
+    estado.semanaOffset = 0;
+    estado.citasDelDia = [];
+    estado.bloqueosDelDia = [];
+    
+    // Limpiamos los campos del formulario de registro para nueva reserva
+    document.getElementById('input-nombre').value = '';
+    document.getElementById('input-telefono').value = '';
+    document.getElementById('bloqueo-aviso').classList.add('hidden');
+    document.getElementById('btn-continuar-registro').classList.remove('hidden');
     
   } catch (error) {
     console.error('Error al confirmar reserva:', error);
@@ -587,8 +644,17 @@ function renderizarCitaBarbero(cita, contenedor) {
   card.id = `cita-${cita.id}`;
   
   // Nombre del cliente (puede venir del lookup de Airtable)
-  const nombreCliente = cita.fields['Cliente_Nombre'] || 'Cliente';
-  const nombreServicio = cita.fields['Servicio_Nombre'] || 'Servicio';
+  // Airtable Lookup fields come as arrays - get first element
+  // Also try alternate field names that Airtable auto-generates
+  const rawCliente = cita.fields['Cliente_Nombre'] 
+    || cita.fields['Nombre (from Cliente)']
+    || cita.fields['Nombre'];
+  const rawServicio = cita.fields['Servicio_Nombre'] 
+    || cita.fields['Servicio (from Servicio)']
+    || cita.fields['Nombre_Servicio'];
+  
+  const nombreCliente = Array.isArray(rawCliente) ? rawCliente[0] : (rawCliente || 'Cliente');
+  const nombreServicio = Array.isArray(rawServicio) ? rawServicio[0] : (rawServicio || 'Servicio');
   
   // Mostrar botones de acción solo si la cita sigue pendiente
   const accionesHTML = estado_cita === 'Pendiente' ? `
